@@ -5,6 +5,8 @@ import type { Plugin } from 'vite'
 import type { Sharp } from 'sharp'
 import type { OutputAsset } from 'rollup'
 
+const VIRTUAL_ID = '@imagepresets'
+
 export default function ImagePlugin({ presets, options }: Props): Plugin {
   let api: API
   let config: Config
@@ -41,7 +43,30 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      * Vite Hook for configuring the dev server.
      * https://vitejs.dev/guide/api-plugin#configureserver
      */
-    configureServer: async () => {},
+    configureServer: (server) => {
+      server.middlewares.use(async (req, res, next) => {
+        if (req.url?.startsWith(VIRTUAL_ID)) {
+          const id = req.url.split(VIRTUAL_ID)[1]
+          const image = await api.getImage(id)
+
+          if (!image) {
+            console.error(`image not found: ${id}`)
+            res.statusCode = 404
+            return res.end()
+          }
+
+          res.setHeader('Content-Type', `image/${await formatFor(image)}`)
+          res.setHeader('Cache-Control', 'max-age=360000')
+
+          return image
+            .clone()
+            .on('error', (e) => console.error(e))
+            .pipe(res)
+        }
+
+        next()
+      })
+    },
     /**
      * Rollup Build Hook called before the files are written in build
      * Gathers generated images and adds them to the output files to write.
@@ -67,14 +92,20 @@ function apiFactory(config: Config): API {
 
   return {
     getImage: async (id) => {
-      if (id in requestedImagesById) return await requestedImagesById[id]!
-      throw new Error(`${id} not found in cache`)
+      if (!id) throw new Error('No id provided')
+      if (!(id in requestedImagesById))
+        throw new Error(`${id} not found in cache`)
+
+      return await requestedImagesById[id]!
     },
     getImages: async () => await Promise.all(generatedImages),
     generateImage: async () => '',
     purgeCache: async () => {},
   }
 }
+
+//TODO: better format types
+declare function formatFor(image: Sharp): Promise<string>
 
 type Props = {
   /** The presets for this project */
@@ -124,7 +155,7 @@ type Config = Options & {
 }
 type Preset = Record<string, unknown>
 type API = {
-  getImage: (id: string) => Promise<Sharp>
+  getImage: (id?: string) => Promise<Sharp>
   getImages: () => Promise<OutputAsset[]>
   purgeCache: (images: OutputAsset[]) => void
   generateImage: (id: ParsedId) => Promise<string>
