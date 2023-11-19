@@ -1,5 +1,5 @@
-import { join } from 'node:path'
-import { mkdir } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { mkdir, readdir, rm } from 'node:fs/promises'
 
 import serialize from '@nuxt/devalue'
 
@@ -114,8 +114,16 @@ function apiFactory(config: Config): API {
     getImages: async () => await Promise.all(generatedImages),
     // TODO: Implement
     generateImage: async () => '',
-    // TODO: Implement
-    purgeCache: async () => {},
+    purgeCache: async (assets) => {
+      if (!config.purgeCache) return
+
+      const usedFiles = new Set(assets.map((a) => a.name))
+      const cachedFiles = await readdir(config.cacheDir)
+      const unusedFiles = cachedFiles.filter((f) => !usedFiles.has(f))
+
+      for (const file of unusedFiles)
+        rm(resolve(config.cacheDir, file), { force: true })
+    },
   }
 }
 
