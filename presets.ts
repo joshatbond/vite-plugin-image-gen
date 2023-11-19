@@ -17,6 +17,7 @@ export function densityPreset(props: DensityProps): PresetConfig {
     density,
     format,
     inferDimensions = false,
+    isBackgroundImage = false,
     resizeOptions,
     withImage,
   } = props
@@ -29,34 +30,37 @@ export function densityPreset(props: DensityProps): PresetConfig {
 
   return {
     inferDimensions,
+    isBackgroundImage,
     image: {
       type: mimeTypeFor(formatKey),
-      specs: density.map((density) =>
-        cleanObject({
-          condition: `${density}x`,
-          args: {
-            ...props,
-            preset: 'density',
-            density,
-            format: { type: formatKey, options: formatValue },
-          },
-          generate: async (img, args) => {
-            img =
-              formatKey !== 'original'
-                ? img.toFormat(formatKey, formatValue)
-                : baseHeight || baseWidth
-                ? img.resize({
-                    width: x(density, baseWidth),
-                    height: x(density, baseHeight),
-                    withoutEnlargement: true,
-                    ...resizeOptions,
-                  })
-                : img
+      specs: density
+        .sort((a, b) => a - b)
+        .map((density) =>
+          cleanObject({
+            condition: `${density}x`,
+            args: {
+              ...props,
+              preset: 'density',
+              density,
+              format: { type: formatKey, options: formatValue },
+            },
+            generate: async (img, args) => {
+              img =
+                formatKey !== 'original'
+                  ? img.toFormat(formatKey, formatValue)
+                  : baseHeight || baseWidth
+                  ? img.resize({
+                      width: x(density, baseWidth),
+                      height: x(density, baseHeight),
+                      withoutEnlargement: true,
+                      ...resizeOptions,
+                    })
+                  : img
 
-            return (await withImage?.(img, args)) ?? img
-          },
-        })
-      ),
+              return (await withImage?.(img, args)) ?? img
+            },
+          })
+        ),
     },
   }
 }
@@ -75,32 +79,37 @@ export function widthPreset(props: WidthProps): PresetConfig {
     inferDimensions,
     image: {
       type: mimeTypeFor(formatKey),
-      specs: widths.map((width) =>
-        cleanObject({
-          condition: width === 'original' ? '' : `${width}w`,
-          args: {
-            preset: 'width',
-            format: { type: formatKey, options: formatValue },
-            width,
-            density,
-            resizeOptions,
-          },
-          generate: async (img, args) => {
-            img =
-              formatKey !== 'original'
-                ? img.toFormat(formatKey, formatValue)
-                : width != 'original' && typeof width == 'number'
-                ? img.resize({
-                    width: x(width, density),
-                    withoutEnlargement: true,
-                    ...resizeOptions,
-                  })
-                : img
-
-            return (await withImage?.(img, args)) ?? img
-          },
+      specs: widths
+        .sort((a, b) => {
+          if (typeof a == 'string' || typeof b == 'string') return 0
+          return a - b
         })
-      ),
+        .map((width) =>
+          cleanObject({
+            condition: width === 'original' ? '' : `${width}w`,
+            args: {
+              preset: 'width',
+              format: { type: formatKey, options: formatValue },
+              width,
+              density,
+              resizeOptions,
+            },
+            generate: async (img, args) => {
+              img =
+                formatKey !== 'original'
+                  ? img.toFormat(formatKey, formatValue)
+                  : width != 'original' && typeof width == 'number'
+                  ? img.resize({
+                      width: x(width, density),
+                      withoutEnlargement: true,
+                      ...resizeOptions,
+                    })
+                  : img
+
+              return (await withImage?.(img, args)) ?? img
+            },
+          })
+        ),
     },
   }
 }
@@ -178,7 +187,7 @@ type WidthArgs = PresetBase & {
   format: { type: AllowedFormatKeys; options: ImageFormatValues }
 }
 
-type Image = sharp.Sharp
+export type Image = sharp.Sharp
 type ImageFormatOptions = {
   avif: AvifOptions
   gif: GifOptions
@@ -191,13 +200,18 @@ type ImageFormatOptions = {
   webp: WebpOptions
 }
 type ImageFormat = ExactlyOne<ImageFormatOptions>
-type ImageFormatKeys = keyof ImageFormat
+export type ImageFormatKeys = keyof ImageFormat
 type ImageFormatValues = ValueOf<ImageFormat>
 type AllowedFormat = ImageFormat | 'original'
 type AllowedFormatKeys = keyof ImageFormat | 'original'
-type ImageGenerator = (img: Image, args: DensityArgs) => Image | Promise<Image>
-type PresetConfig = {
+export type ImageGenerator = (
+  img: Image,
+  args: PresetArgs
+) => Image | Promise<Image>
+export type PresetConfig = {
   inferDimensions: boolean
+  /** only defined if using density preset */
+  isBackgroundImage?: boolean
   image: {
     type?: string
     specs: PresetSpec[]
@@ -215,7 +229,7 @@ type PresetSpec = {
   /** A function to generate the image */
   generate: ImageGenerator
 }
-type PresetArgs = DensityArgs | WidthArgs
+export type PresetArgs = DensityArgs | WidthArgs
 
 /**
  * Map over an object (T), and for each member of keyof T -> return a union of types
