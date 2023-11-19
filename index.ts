@@ -74,8 +74,12 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      * Gathers generated images and adds them to the output files to write.
      * https://rollupjs.org/plugin-development/#generatebundle
      */
-    // TODO: Implement
-    generateBundle: async () => {},
+    generateBundle: async (_, output) => {
+      if (!config.writeToBundle) return
+      const images = await api.getImages()
+      for (const image of images) output[image.fileName] = image
+      api.purgeCache(images)
+    },
     /**
      * Rollup Build Hook called on each incoming module request
      * This is a loader that checks the module request for the
