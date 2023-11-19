@@ -1,6 +1,8 @@
 import { join } from 'node:path'
 import { mkdir } from 'node:fs/promises'
 
+import serialize from '@nuxt/devalue'
+
 import type { Plugin } from 'vite'
 import type { Sharp } from 'sharp'
 import type { OutputAsset } from 'rollup'
@@ -80,8 +82,13 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      * presence of a preset, and returns the resolved image
      * https://rollupjs.org/plugin-development/#load
      */
-    // TODO: Implement
-    load: async () => {},
+    load: async (id) => {
+      const parsedId = parseId(id)
+      if (!(config.urlParam in parsedId.query)) return
+
+      const image = await api.generateImage(parsedId)
+      return `export default ${serialize(image)}`
+    },
   }
 }
 
@@ -108,8 +115,14 @@ function apiFactory(config: Config): API {
   }
 }
 
-//TODO: better format types
+// TODO: Implement
+// TODO: better format types
+/** Retrieve the image format for a given image */
 declare function formatFor(image: Sharp): Promise<string>
+
+// TODO: Implement
+/** parse the incoming module as a URL */
+declare function parseId(id: string): ParsedId
 
 type Props = {
   /** The presets for this project */
