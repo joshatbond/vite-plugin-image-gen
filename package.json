@@ -13,6 +13,14 @@
     "build": "tsup index.ts --format cjs,esm --dts"
   },
   "devDependencies": {
-    "typescript": "^5.2.2"
+    "@nuxt/devalue": "^2.0.2",
+    "@types/debug": "^4.1.12",
+    "debug": "^4.3.4",
+    "rollup": "^4.5.0",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "sharp": "^0.32.6"
   }
 }
