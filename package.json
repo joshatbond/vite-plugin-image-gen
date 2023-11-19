@@ -1,5 +1,14 @@
 {
   "name": "vite-plugin-image-gen",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "A Vite plugin that will generated images using a configured preset",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joshatbond/vite-plugin-image-gen"
+  },
+  "bugs": "https://github.com/joshatbond/vite-plugin-image-gen/issues",
+  "sideEffects": false,
   "scripts": {
     "build": "tsup index.ts --format cjs,esm --dts"
   },
