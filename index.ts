@@ -1,4 +1,6 @@
 import type { Plugin } from 'vite'
+import type { Sharp } from 'sharp'
+import type { OutputAsset } from 'rollup'
 
 export default function ImagePlugin({ presets, options }: Props): Plugin {
   return {
@@ -29,6 +31,24 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      * https://rollupjs.org/plugin-development/#load
      */
     load: async () => {},
+  }
+}
+
+function apiFactory(config: Config): API {
+  // Used in dev and build to ensure images are loaded only once
+  const requestedImagesById: Record<string, Sharp | Promise<Sharp>> = {}
+
+  // Used in build to optimize file lookups and prevent duplicate processing
+  const generatedImages: Promise<OutputAsset>[] = []
+
+  return {
+    getImage: async (id) => {
+      if (id in requestedImagesById) return await requestedImagesById[id]!
+      throw new Error(`${id} not found in cache`)
+    },
+    getImages: async () => await Promise.all(generatedImages),
+    generateImage: async () => '',
+    purgeCache: async () => {},
   }
 }
 
@@ -70,4 +90,19 @@ type Options = {
    */
   writeToBundle: boolean
 }
+type Config = Options & {
+  /** whether we are running a build (true) or in dev mode (false) */
+  isBuild: boolean
+  /** Base public path when served in development or production. */
+  base: string
+  /** Project root directory. Can be an absolute path, or a path relative from the location of the config file itself. */
+  root: string
+}
 type Preset = Record<string, unknown>
+type API = {
+  getImage: (id: string) => Promise<Sharp>
+  getImages: () => Promise<OutputAsset[]>
+  purgeCache: (images: OutputAsset[]) => void
+  generateImage: (id: ParsedId) => Promise<string>
+}
+type ParsedId = { path: string; query: Record<string, string> }
