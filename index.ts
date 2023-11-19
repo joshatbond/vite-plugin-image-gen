@@ -1,8 +1,14 @@
+import { join } from 'node:path'
+import { mkdir } from 'node:fs/promises'
+
 import type { Plugin } from 'vite'
 import type { Sharp } from 'sharp'
 import type { OutputAsset } from 'rollup'
 
 export default function ImagePlugin({ presets, options }: Props): Plugin {
+  let api: API
+  let config: Config
+
   return {
     /** required: Names the plugin */
     name: 'image-gen',
@@ -12,7 +18,25 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      * Vite Hook called after the vite config is resolved.
      * https://vitejs.dev/guide/api-plugin#configresolved
      */
-    configResolved: async () => {},
+    configResolved: async ({ build: { assetsDir }, base, command, root }) => {
+      config = {
+        assetsDir,
+        base,
+        cacheDir: join(root, 'node_modules', '.images'),
+        isBuild: command === 'build',
+        // from plugin instantiation
+        presets,
+        purgeCache: true,
+        root,
+        urlParam: 'preset',
+        writeToBundle: true,
+
+        // from plugin instantiation, overrides the above
+        ...options,
+      }
+      api = apiFactory(config)
+      if (config.isBuild) await mkdir(config.cacheDir, { recursive: true })
+    },
     /**
      * Vite Hook for configuring the dev server.
      * https://vitejs.dev/guide/api-plugin#configureserver
