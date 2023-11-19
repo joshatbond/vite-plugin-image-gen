@@ -72,6 +72,7 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      * Gathers generated images and adds them to the output files to write.
      * https://rollupjs.org/plugin-development/#generatebundle
      */
+    // TODO: Implement
     generateBundle: async () => {},
     /**
      * Rollup Build Hook called on each incoming module request
@@ -79,6 +80,7 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      * presence of a preset, and returns the resolved image
      * https://rollupjs.org/plugin-development/#load
      */
+    // TODO: Implement
     load: async () => {},
   }
 }
@@ -99,7 +101,9 @@ function apiFactory(config: Config): API {
       return await requestedImagesById[id]!
     },
     getImages: async () => await Promise.all(generatedImages),
+    // TODO: Implement
     generateImage: async () => '',
+    // TODO: Implement
     purgeCache: async () => {},
   }
 }
@@ -155,9 +159,13 @@ type Config = Options & {
 }
 type Preset = Record<string, unknown>
 type API = {
+  /** Retrieve a single */
   getImage: (id?: string) => Promise<Sharp>
+  /** Retrieve all images */
   getImages: () => Promise<OutputAsset[]>
+  /** Remove unused files (i.e: not imported) from the cache */
   purgeCache: (images: OutputAsset[]) => void
+  /** Generate all permutations of an image based on a given preset */
   generateImage: (id: ParsedId) => Promise<string>
 }
 type ParsedId = { path: string; query: Record<string, string> }
