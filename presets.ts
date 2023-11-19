@@ -60,7 +60,50 @@ export function densityPreset(props: DensityProps): PresetConfig {
     },
   }
 }
-export function widthPreset() {}
+export function widthPreset(props: WidthProps): PresetConfig {
+  const { format, inferDimensions = false, resizeOptions, withImage } = props
+  const formatKey =
+    format == 'original' ? format : (Object.keys(format)[0] as ImageFormatKeys)
+  const formatValue =
+    format == 'original'
+      ? undefined
+      : (format[formatKey as ImageFormatKeys] as ImageFormatValues)
+  const widths = props.widths == 'original' ? ['original'] : props.widths
+  const density = props.widths === 'original' ? undefined : props.density
+
+  return {
+    inferDimensions,
+    image: {
+      type: mimeTypeFor(formatKey),
+      specs: widths.map((width) =>
+        cleanObject({
+          condition: width === 'original' ? '' : `${width}w`,
+          args: {
+            preset: 'width',
+            format: { type: formatKey, options: formatValue },
+            width,
+            density,
+            resizeOptions,
+          },
+          generate: async (img, args) => {
+            img =
+              formatKey !== 'original'
+                ? img.toFormat(formatKey, formatValue)
+                : width != 'original' && typeof width == 'number'
+                ? img.resize({
+                    width: x(width, density),
+                    withoutEnlargement: true,
+                    ...resizeOptions,
+                  })
+                : img
+
+            return (await withImage?.(img, args)) ?? img
+          },
+        })
+      ),
+    },
+  }
+}
 
 function mimeTypeFor(format: AllowedFormatKeys) {
   return format == 'original'
@@ -84,19 +127,11 @@ function x(quantity: number, n?: number) {
   return n ? quantity * n : quantity
 }
 
-type DensityBase = {
+type DensityBase = PresetBase & {
   /** modify the image to a new height, maintaining aspect ratio */
   baseHeight?: number
   /** modify the image to a new width, maintaining aspect ratio */
   baseWidth?: number
-  /** Specify specific sharp resize options to use */
-  resizeOptions?: ResizeOptions
-  withImage?: ImageGenerator
-  /**
-   * Should the plugin expose the intrinsic width and height of the image as
-   * additional properties in the returned value?
-   */
-  inferDimensions?: boolean
   /** Setting this flag will generate an `imageSet` instead of a `srcset` */
   isBackgroundImage?: boolean
 }
@@ -113,6 +148,36 @@ type DensityArgs = DensityBase & {
   density: number
   format: { type: AllowedFormatKeys; options: ImageFormatValues }
 }
+type PresetBase = {
+  /** Specify specific sharp resize options to use */
+  resizeOptions?: ResizeOptions
+  /** Customize the image generator */
+  withImage?: ImageGenerator
+  /**
+   * Should the plugin expose the intrinsic width and height of the image as
+   * additional properties in the returned value?
+   */
+  inferDimensions?: boolean
+}
+type WidthProps = PresetBase & { format: AllowedFormat } & (
+    | OriginalWidth
+    | ModifiedWidth
+  )
+type OriginalWidth = {
+  /** maintain original image size */
+  widths: 'original'
+}
+type ModifiedWidth = {
+  /** A list of image widths to generate */
+  widths: number[]
+  /** Modify the width by some scalar amount */
+  density?: number
+}
+type WidthArgs = PresetBase & {
+  density?: number
+  format: { type: AllowedFormatKeys; options: ImageFormatValues }
+}
+
 type Image = sharp.Sharp
 type ImageFormatOptions = {
   avif: AvifOptions
@@ -140,7 +205,7 @@ type PresetConfig = {
 }
 type PresetSpec = {
   /** The parameters for the image generation function. */
-  args: DensityArgs
+  args: PresetArgs
   /**
    * A condition descriptor that specifies when the image should be used.
    * Can be a width descriptor or a density descriptor.
@@ -150,6 +215,7 @@ type PresetSpec = {
   /** A function to generate the image */
   generate: ImageGenerator
 }
+type PresetArgs = DensityArgs | WidthArgs
 
 /**
  * Map over an object (T), and for each member of keyof T -> return a union of types
