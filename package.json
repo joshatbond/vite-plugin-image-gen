@@ -1,0 +1,9 @@
+{
+  "name": "vite-plugin-image-gen",
+  "scripts": {
+    "build": "tsup index.ts --format cjs,esm --dts"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2"
+  }
+}
