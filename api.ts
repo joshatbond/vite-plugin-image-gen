@@ -59,15 +59,14 @@ export function apiFactory(config: Config, pluginId: string): API {
         )
 
       if (preset.isBackgroundImage) {
-        const src = `url(${source[0]})`
-        const imageSet = sourceSet
-          .map((s) => `url(${s.filter(Boolean).join(' ')})`)
-          .join(', ')
+        const src = source[0]
+        const imageSet = sourceSet.map((s) => `url(${s[0]}) ${s[1]}`).join(', ')
 
         return {
           _type: 'bg',
           src,
           imageSet,
+          srcset: sourceSet.map((s) => s.filter(Boolean).join(' ')).join(', '),
         } satisfies BGAttr
       } else {
         let imageWidth = undefined
@@ -132,7 +131,7 @@ export function apiFactory(config: Config, pluginId: string): API {
       return config.base + (await imageFilenamesById[id])
     }
 
-    return pluginId + id
+    return `/${pluginId}/${id}`
   }
   async function queueImageAndGetFilename(
     id: string,
@@ -206,12 +205,14 @@ async function exists(path: string) {
 }
 /** Generate a hashed path for a url */
 function generateImageID(url: string, args: PresetArgs) {
-  const extension = args.format.type !== 'original' ? `.${args.format}` : ''
+  const extension =
+    args.format.type !== 'original' ? `.${args.format.type}` : ''
   const base = createHash('sha256')
     .update(url)
     .update(JSON.stringify(args))
     .digest('hex')
     .slice(0, 8)
+
   return base + extension
 }
 /** Generate an 8 character hex hash for an asset */
@@ -231,12 +232,16 @@ export type API = {
 }
 
 export type PresetAttr = BGAttr | ImageAttr
-type BGAttr = {
+export type BGAttr = {
   _type: 'bg'
+  /** the url of the largest image */
   src: string
+  /** a complete image-set CSS attribute */
   imageSet: string
+  /** a srcset attribute for preloading, identical to the image-set */
+  srcset: string
 }
-type ImageAttr = {
+export type ImageAttr = {
   _type: 'img'
   src: string
   srcset: string
