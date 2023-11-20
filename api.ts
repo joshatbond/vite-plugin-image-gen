@@ -180,7 +180,10 @@ export async function formatFor(image: sharp.Sharp): Promise<ImageFormatKeys> {
     'tiff',
     'webp',
   ]
-  const format = (await image.metadata()).format
+  // @ts-ignore - the options property doesn't exist for some reason inside of the Sharp interface
+  let format = image.options?.formatOut
+
+  if (format == 'input') format = (await image.metadata()).format
   if (!format || !allowedFormats.includes(format)) {
     console.error(`Could not infer image format for ${image}`)
     throw new Error('Could not infer image format')
