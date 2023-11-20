@@ -5,7 +5,14 @@ import serialize from '@nuxt/devalue'
 
 import type { Plugin } from 'vite'
 import type { PresetConfig } from './presets'
-import { apiFactory, formatFor, type API } from './api'
+import {
+  apiFactory,
+  formatFor,
+  type API,
+  type PresetAttr as TPresetAttr,
+  type BGAttr as TBGAttr,
+  type ImageAttr as TImageAttr,
+} from './api'
 
 const VIRTUAL_ID = '@imagepresets'
 
@@ -107,11 +114,24 @@ function parseId(id: string): ParsedId {
   }
 }
 
+export type Config = Options & {
+  /** whether we are running a build (true) or in dev mode (false) */
+  isBuild: boolean
+  /** Base public path when served in development or production. */
+  base: string
+  /** Project root directory. Can be an absolute path, or a path relative from the location of the config file itself. */
+  root: string
+}
+export type ParsedId = { path: string; query: Record<string, string> }
+export type PresetAttr = TPresetAttr
+export type ImageAttr = TImageAttr
+export type BGAttr = TBGAttr
+
 type Props = {
   /** The presets for this project */
   presets: Preset
   /** Override default configuration */
-  options: Partial<Options>
+  options?: Partial<Options>
 }
 
 type Options = {
@@ -145,14 +165,5 @@ type Options = {
    */
   writeToBundle: boolean
 }
-export type Config = Options & {
-  /** whether we are running a build (true) or in dev mode (false) */
-  isBuild: boolean
-  /** Base public path when served in development or production. */
-  base: string
-  /** Project root directory. Can be an absolute path, or a path relative from the location of the config file itself. */
-  root: string
-}
-type Preset = Record<string, PresetConfig>
 
-export type ParsedId = { path: string; query: Record<string, string> }
+type Preset = Record<string, PresetConfig>
