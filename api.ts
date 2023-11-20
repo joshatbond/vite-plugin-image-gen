@@ -131,7 +131,7 @@ export function apiFactory(config: Config, pluginId: string): API {
       return config.base + (await imageFilenamesById[id])
     }
 
-    return `/${pluginId}/${id}`
+    return pluginId + id
   }
   async function queueImageAndGetFilename(
     id: string,
