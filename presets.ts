@@ -28,6 +28,10 @@ export function densityPreset(props: DensityProps): PresetConfig {
       ? undefined
       : (format[formatKey as ImageFormatKeys] as ImageFormatValues)
 
+  const highestDensity = density
+    .sort((a, b) => a - b)
+    .reduce((a, v) => (v >= a ? v : a), 1)
+
   return {
     inferDimensions,
     isBackgroundImage,
@@ -41,23 +45,33 @@ export function densityPreset(props: DensityProps): PresetConfig {
             args: {
               ...props,
               preset: 'density',
-              density,
+              density: density / highestDensity,
               format: { type: formatKey, options: formatValue },
             },
-            generate: async (img, args) => {
-              img =
-                formatKey !== 'original'
-                  ? img.toFormat(formatKey, formatValue)
-                  : baseHeight || baseWidth
-                  ? img.resize({
-                      width: x(density, baseWidth),
-                      height: x(density, baseHeight),
-                      withoutEnlargement: true,
-                      ...resizeOptions,
-                    })
-                  : img
+            generate: async (img, { density, format: { type, options } }) => {
+              if (type != 'original') {
+                img = img.toFormat(type, options)
+              }
+              if (density) {
+                if (baseHeight || baseWidth) {
+                  img = img.resize({
+                    width: x(density / highestDensity, baseWidth),
+                    height: x(density / highestDensity, baseHeight),
+                    withoutEnlargement: true,
+                    ...resizeOptions,
+                  })
+                } else {
+                  const { width } = await img.metadata()
+                  img = img.resize({ width: x(density, width) })
+                }
+              }
 
-              return (await withImage?.(img, args)) ?? img
+              return (
+                (await withImage?.(img, {
+                  density,
+                  format: { type, options },
+                })) ?? img
+              )
             },
           })
         ),
@@ -73,7 +87,7 @@ export function widthPreset(props: WidthProps): PresetConfig {
       ? undefined
       : (format[formatKey as ImageFormatKeys] as ImageFormatValues)
   const widths = props.widths == 'original' ? ['original'] : props.widths
-  const density = props.widths === 'original' ? undefined : props.density
+  const density = props.widths === 'original' ? undefined : props.density ?? 1
 
   return {
     inferDimensions,
@@ -95,16 +109,16 @@ export function widthPreset(props: WidthProps): PresetConfig {
               resizeOptions,
             },
             generate: async (img, args) => {
-              img =
-                formatKey !== 'original'
-                  ? img.toFormat(formatKey, formatValue)
-                  : width != 'original' && typeof width == 'number'
-                  ? img.resize({
-                      width: x(width, density),
-                      withoutEnlargement: true,
-                      ...resizeOptions,
-                    })
-                  : img
+              if (formatKey !== 'original') {
+                img = img.toFormat(formatKey, formatValue)
+              }
+              if (width !== 'original' && typeof width == 'number') {
+                img = img.resize({
+                  width: x(width, density),
+                  withoutEnlargement: true,
+                  ...resizeOptions,
+                })
+              }
 
               return (await withImage?.(img, args)) ?? img
             },
@@ -133,7 +147,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && !Array.isArray(value) && value !== null
 }
 function x(quantity: number, n?: number) {
-  return n ? quantity * n : quantity
+  return n ? Math.floor(quantity * n) : undefined
 }
 
 type DensityBase = PresetBase & {
