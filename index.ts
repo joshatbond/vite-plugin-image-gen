@@ -59,7 +59,6 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
           const image = await api.getImage(id)
 
           if (!image) {
-            console.error(`image not found: ${id}`)
             res.statusCode = 404
             return res.end()
           }
