@@ -54,12 +54,9 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      */
     configureServer: (server) => {
       server.middlewares.use(async (req, res, next) => {
-        console.log('server here', req.url, VIRTUAL_ID)
         if (req.url?.startsWith(VIRTUAL_ID)) {
           const id = req.url.split(VIRTUAL_ID)[1]
-          console.log('looking for image with id: ', id)
           const image = await api.getImage(id)
-          console.log('got image', image)
 
           if (!image) {
             console.error(`image not found: ${id}`)
