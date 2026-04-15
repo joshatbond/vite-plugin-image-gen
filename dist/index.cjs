@@ -413,7 +413,7 @@ function apiFactory(config, pluginId) {
       const format = yield formatFor(image);
       const filename = `${base}.${hash}.${format}`;
       generatedImages.push(writeImageFile(filename, image));
-      return (0, import_node_path.join)(config.assetsDir, filename);
+      return import_node_path.posix.join(config.assetsDir, filename);
     });
   }
   function writeImageFile(filename, image) {
@@ -423,7 +423,7 @@ function apiFactory(config, pluginId) {
         yield image.toFile(cachedFilename);
       }
       return {
-        fileName: (0, import_node_path.join)(config.assetsDir, filename),
+        fileName: import_node_path.posix.join(config.assetsDir, filename),
         name: filename,
         needsCodeReference: true,
         source: yield (0, import_promises.readFile)(cachedFilename),

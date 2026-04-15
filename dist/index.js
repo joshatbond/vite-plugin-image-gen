@@ -245,7 +245,7 @@ function stringifyString(str) {
 import sharp from "sharp";
 import { access, constants, readFile, readdir, rm } from "fs/promises";
 import { createHash } from "crypto";
-import { basename, extname, join, resolve } from "path";
+import { basename, extname, join, posix, resolve } from "path";
 function apiFactory(config, pluginId) {
   const requestedImagesById = {};
   const generatedImages = [];
@@ -350,7 +350,7 @@ function apiFactory(config, pluginId) {
       const format = yield formatFor(image);
       const filename = `${base}.${hash}.${format}`;
       generatedImages.push(writeImageFile(filename, image));
-      return join(config.assetsDir, filename);
+      return posix.join(config.assetsDir, filename);
     });
   }
   function writeImageFile(filename, image) {
@@ -360,7 +360,7 @@ function apiFactory(config, pluginId) {
         yield image.toFile(cachedFilename);
       }
       return {
-        fileName: join(config.assetsDir, filename),
+        fileName: posix.join(config.assetsDir, filename),
         name: filename,
         needsCodeReference: true,
         source: yield readFile(cachedFilename),

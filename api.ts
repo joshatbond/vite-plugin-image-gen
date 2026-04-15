@@ -10,7 +10,7 @@ import type {
 } from './presets'
 import { access, constants, readFile, readdir, rm } from 'fs/promises'
 import { createHash } from 'node:crypto'
-import { basename, extname, join, resolve } from 'node:path'
+import { basename, extname, join, posix, resolve } from 'node:path'
 
 export function apiFactory(config: Config, pluginId: string): API {
   // Used in dev and build to ensure images are loaded only once
@@ -143,7 +143,7 @@ export function apiFactory(config: Config, pluginId: string): API {
 
     generatedImages.push(writeImageFile(filename, image))
 
-    return join(config.assetsDir, filename)
+    return posix.join(config.assetsDir, filename)
   }
   async function writeImageFile(
     filename: string,
@@ -156,7 +156,7 @@ export function apiFactory(config: Config, pluginId: string): API {
     }
 
     return {
-      fileName: join(config.assetsDir, filename),
+      fileName: posix.join(config.assetsDir, filename),
       name: filename,
       needsCodeReference: true,
       source: await readFile(cachedFilename),
