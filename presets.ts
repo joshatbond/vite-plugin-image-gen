@@ -27,18 +27,16 @@ export function densityPreset(props: DensityProps): PresetConfig {
     format == 'original'
       ? undefined
       : (format[formatKey as ImageFormatKeys] as ImageFormatValues)
+  const sortedDensity = [...density].sort((a, b) => a - b)
 
-  const highestDensity = density
-    .sort((a, b) => a - b)
-    .reduce((a, v) => (v >= a ? v : a), 1)
+  const highestDensity = sortedDensity.reduce((a, v) => (v >= a ? v : a), 1)
 
   return {
     inferDimensions,
     isBackgroundImage,
     image: {
       type: mimeTypeFor(formatKey),
-      specs: density
-        .sort((a, b) => a - b)
+      specs: sortedDensity
         .map((density) =>
           cleanObject({
             condition: `${density}x`,
@@ -94,16 +92,16 @@ export function widthPreset(props: WidthProps): PresetConfig {
   const widths: Array<number | 'original'> =
     props.widths === 'original' ? ['original'] : props.widths
   const density = props.widths === 'original' ? undefined : props.density ?? 1
+  const sortedWidths = [...widths].sort((a, b) => {
+    if (typeof a == 'string' || typeof b == 'string') return 0
+    return a - b
+  })
 
   return {
     inferDimensions,
     image: {
       type: mimeTypeFor(formatKey),
-      specs: widths
-        .sort((a, b) => {
-          if (typeof a == 'string' || typeof b == 'string') return 0
-          return a - b
-        })
+      specs: sortedWidths
         .map((width) =>
           cleanObject({
             condition: width === 'original' ? '' : `${width}w`,
