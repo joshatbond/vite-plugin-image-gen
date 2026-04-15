@@ -155,12 +155,13 @@ export function apiFactory(config: Config, pluginId: string): API {
     if (!(await exists(cachedFilename))) {
       await image.toFile(cachedFilename)
     }
+    const source = Uint8Array.from(await readFile(cachedFilename))
 
     return {
       fileName: posix.join(config.assetsDir, filename),
       name: filename,
       needsCodeReference: true,
-      source: await readFile(cachedFilename),
+      source,
       type: 'asset',
     }
   }
@@ -219,7 +220,10 @@ function generateImageID(url: string, args: PresetArgs) {
 }
 /** Generate an 8 character hex hash for an asset */
 function getAssetHash(content: string | Buffer) {
-  return createHash('sha256').update(content).digest('hex').slice(0, 8)
+  return createHash('sha256')
+    .update(typeof content === 'string' ? content : Uint8Array.from(content))
+    .digest('hex')
+    .slice(0, 8)
 }
 
 export type API = {

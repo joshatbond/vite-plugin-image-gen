@@ -344,11 +344,12 @@ function apiFactory(config, pluginId) {
     if (!await exists(cachedFilename)) {
       await image.toFile(cachedFilename);
     }
+    const source = Uint8Array.from(await readFile(cachedFilename));
     return {
       fileName: posix.join(config.assetsDir, filename),
       name: filename,
       needsCodeReference: true,
-      source: await readFile(cachedFilename),
+      source,
       type: "asset"
     };
   }
@@ -392,7 +393,7 @@ function generateImageID(url, args) {
   return base + extension;
 }
 function getAssetHash(content) {
-  return createHash("sha256").update(content).digest("hex").slice(0, 8);
+  return createHash("sha256").update(typeof content === "string" ? content : Uint8Array.from(content)).digest("hex").slice(0, 8);
 }
 
 // index.ts
