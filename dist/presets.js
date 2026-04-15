@@ -40,8 +40,8 @@ function densityPreset(props) {
             if (density3) {
               if (baseHeight || baseWidth) {
                 img = img.resize(__spreadValues({
-                  width: x(density3 / highestDensity, baseWidth),
-                  height: x(density3 / highestDensity, baseHeight),
+                  width: x(density3, baseWidth),
+                  height: x(density3, baseHeight),
                   withoutEnlargement: true
                 }, resizeOptions));
               } else {

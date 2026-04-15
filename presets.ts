@@ -55,8 +55,8 @@ export function densityPreset(props: DensityProps): PresetConfig {
               if (density) {
                 if (baseHeight || baseWidth) {
                   img = img.resize({
-                    width: x(density / highestDensity, baseWidth),
-                    height: x(density / highestDensity, baseHeight),
+                    width: x(density, baseWidth),
+                    height: x(density, baseHeight),
                     withoutEnlargement: true,
                     ...resizeOptions,
                   })
