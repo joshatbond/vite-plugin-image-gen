@@ -1,4 +1,4 @@
-// index.ts
+// src/index.ts
 import { join as join2 } from "path";
 import { mkdir } from "fs/promises";
 
@@ -236,7 +236,7 @@ function stringifyString(str) {
   return result;
 }
 
-// api.ts
+// src/api.ts
 import sharp from "sharp";
 import { access, constants, readFile, readdir, rm } from "fs/promises";
 import { createHash } from "crypto";
@@ -396,7 +396,7 @@ function getAssetHash(content) {
   return createHash("sha256").update(typeof content === "string" ? content : Uint8Array.from(content)).digest("hex").slice(0, 8);
 }
 
-// index.ts
+// src/index.ts
 var VIRTUAL_ID = "/@imagepresets";
 function ImagePlugin({ presets, options }) {
   let api;

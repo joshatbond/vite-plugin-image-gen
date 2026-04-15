@@ -27,7 +27,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// index.ts
+// src/index.ts
 var index_exports = {};
 __export(index_exports, {
   default: () => ImagePlugin
@@ -270,7 +270,7 @@ function stringifyString(str) {
   return result;
 }
 
-// api.ts
+// src/api.ts
 var import_sharp = __toESM(require("sharp"), 1);
 var import_promises = require("fs/promises");
 var import_node_crypto = require("crypto");
@@ -430,7 +430,7 @@ function getAssetHash(content) {
   return (0, import_node_crypto.createHash)("sha256").update(typeof content === "string" ? content : Uint8Array.from(content)).digest("hex").slice(0, 8);
 }
 
-// index.ts
+// src/index.ts
 var VIRTUAL_ID = "/@imagepresets";
 function ImagePlugin({ presets, options }) {
   let api;

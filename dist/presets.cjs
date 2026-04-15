@@ -17,7 +17,7 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// presets.ts
+// src/presets.ts
 var presets_exports = {};
 __export(presets_exports, {
   densityPreset: () => densityPreset,

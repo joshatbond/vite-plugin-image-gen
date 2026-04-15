@@ -36,48 +36,47 @@ export function densityPreset(props: DensityProps): PresetConfig {
     isBackgroundImage,
     image: {
       type: mimeTypeFor(formatKey),
-      specs: sortedDensity
-        .map((density) =>
-          cleanObject({
-            condition: `${density}x`,
-            args: {
-              ...props,
-              preset: 'density',
-              density: density / highestDensity,
-              format: toFormatArg(formatKey, formatValue),
-            },
-            generate: async (img, args) => {
-              const {
-                density,
-                format: { type, options },
-              } = args as DensityArgs
-              if (type != 'original') {
-                img = img.toFormat(type, options)
+      specs: sortedDensity.map((density) =>
+        cleanObject({
+          condition: `${density}x`,
+          args: {
+            ...props,
+            preset: 'density',
+            density: density / highestDensity,
+            format: toFormatArg(formatKey, formatValue),
+          },
+          generate: async (img, args) => {
+            const {
+              density,
+              format: { type, options },
+            } = args as DensityArgs
+            if (type != 'original') {
+              img = img.toFormat(type, options)
+            }
+            if (density) {
+              if (baseHeight || baseWidth) {
+                img = img.resize({
+                  width: x(density, baseWidth),
+                  height: x(density, baseHeight),
+                  withoutEnlargement: true,
+                  ...resizeOptions,
+                })
+              } else {
+                const { width } = await img.metadata()
+                img = img.resize({ width: x(density, width) })
               }
-              if (density) {
-                if (baseHeight || baseWidth) {
-                  img = img.resize({
-                    width: x(density, baseWidth),
-                    height: x(density, baseHeight),
-                    withoutEnlargement: true,
-                    ...resizeOptions,
-                  })
-                } else {
-                  const { width } = await img.metadata()
-                  img = img.resize({ width: x(density, width) })
-                }
-              }
+            }
 
-              return (
-                (await withImage?.(img, {
-                  preset: 'density',
-                  density,
-                  format: toFormatArg(type, options),
-                })) ?? img
-              )
-            },
-          })
-        ),
+            return (
+              (await withImage?.(img, {
+                preset: 'density',
+                density,
+                format: toFormatArg(type, options),
+              })) ?? img
+            )
+          },
+        })
+      ),
     },
   }
 }
@@ -101,33 +100,32 @@ export function widthPreset(props: WidthProps): PresetConfig {
     inferDimensions,
     image: {
       type: mimeTypeFor(formatKey),
-      specs: sortedWidths
-        .map((width) =>
-          cleanObject({
-            condition: width === 'original' ? '' : `${width}w`,
-            args: {
-              preset: 'width',
-              format: toFormatArg(formatKey, formatValue),
-              width,
-              density,
-              resizeOptions,
-            },
-            generate: async (img, args) => {
-              if (formatKey !== 'original') {
-                img = img.toFormat(formatKey, formatValue)
-              }
-              if (width !== 'original' && typeof width == 'number') {
-                img = img.resize({
-                  width: x(width, density),
-                  withoutEnlargement: true,
-                  ...resizeOptions,
-                })
-              }
+      specs: sortedWidths.map((width) =>
+        cleanObject({
+          condition: width === 'original' ? '' : `${width}w`,
+          args: {
+            preset: 'width',
+            format: toFormatArg(formatKey, formatValue),
+            width,
+            density,
+            resizeOptions,
+          },
+          generate: async (img, args) => {
+            if (formatKey !== 'original') {
+              img = img.toFormat(formatKey, formatValue)
+            }
+            if (width !== 'original' && typeof width == 'number') {
+              img = img.resize({
+                width: x(width, density),
+                withoutEnlargement: true,
+                ...resizeOptions,
+              })
+            }
 
-              return (await withImage?.(img, args)) ?? img
-            },
-          })
-        ),
+            return (await withImage?.(img, args)) ?? img
+          },
+        })
+      ),
     },
   }
 }
@@ -195,9 +193,9 @@ type PresetBase = {
   inferDimensions?: boolean
 }
 type WidthProps = PresetBase & { format: AllowedFormat } & (
-    | OriginalWidth
-    | ModifiedWidth
-  )
+  | OriginalWidth
+  | ModifiedWidth
+)
 type OriginalWidth = {
   /** maintain original image size */
   widths: 'original'
