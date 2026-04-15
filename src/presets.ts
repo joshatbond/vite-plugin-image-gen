@@ -10,6 +10,19 @@ import type {
   WebpOptions,
 } from 'sharp'
 
+/**
+ * Create a density-based preset (for example `1x`, `2x`, `3x`).
+ *
+ * Use this when you want a `srcset` (or CSS `image-set`) driven by pixel density
+ * rather than viewport width.
+ *
+ * @example
+ * const retina = densityPreset({
+ *   density: [1, 2],
+ *   baseWidth: 1200,
+ *   format: { webp: { quality: 80 } },
+ * })
+ */
 export function densityPreset(props: DensityProps): PresetConfig {
   const {
     baseHeight,
@@ -80,6 +93,19 @@ export function densityPreset(props: DensityProps): PresetConfig {
     },
   }
 }
+/**
+ * Create a width-based preset (for example `320w`, `640w`, `1280w`).
+ *
+ * Use this for responsive `<img>` `srcset` generation where the browser selects
+ * the best candidate using `sizes`.
+ *
+ * @example
+ * const responsive = widthPreset({
+ *   widths: [320, 640, 960, 1280],
+ *   format: { avif: { quality: 60 } },
+ *   inferDimensions: true,
+ * })
+ */
 export function widthPreset(props: WidthProps): PresetConfig {
   const { format, inferDimensions = false, resizeOptions, withImage } = props
   const formatKey =
@@ -160,20 +186,35 @@ function x(quantity: number, n?: number) {
 }
 
 type DensityBase = PresetBase & {
-  /** modify the image to a new height, maintaining aspect ratio */
+  /**
+   * Target height for the highest density variant.
+   * Lower density variants are scaled down from this value.
+   */
   baseHeight?: number
-  /** modify the image to a new width, maintaining aspect ratio */
+  /**
+   * Target width for the highest density variant.
+   * Lower density variants are scaled down from this value.
+   */
   baseWidth?: number
-  /** Setting this flag will generate an `imageSet` instead of a `srcset` */
+  /**
+   * Return background-image style output (`imageSet`) instead of standard image
+   * `srcset` attributes.
+   */
   isBackgroundImage?: boolean
 }
 type DensityProps = DensityBase & {
   /**
-   * @description The desired image density
-   * @example `density: [1, 2]` -> 1x, 2x images generated
+   * Pixel density variants to generate.
+   *
+   * @example
+   * density: [1, 2] // generates 1x and 2x outputs
    */
   density: number[]
-  /** Convert the original image to a new format */
+  /**
+   * Output format configuration.
+   * Use `'original'` to keep the input format, or provide one format option
+   * object like `{ webp: { quality: 80 } }`.
+   */
   format: AllowedFormat
 }
 type DensityArgs = DensityBase & {
@@ -182,13 +223,20 @@ type DensityArgs = DensityBase & {
   format: FormatArg
 }
 type PresetBase = {
-  /** Specify specific sharp resize options to use */
+  /**
+   * Additional options forwarded to `sharp.resize(...)`.
+   * Useful for setting `fit`, `position`, etc.
+   */
   resizeOptions?: ResizeOptions
-  /** Customize the image generator */
+  /**
+   * Optional hook to customize each generated image variant.
+   * Receives the in-progress Sharp instance and preset-specific args.
+   */
   withImage?: ImageGenerator
   /**
-   * Should the plugin expose the intrinsic width and height of the image as
-   * additional properties in the returned value?
+   * Include intrinsic `width` and `height` in returned attributes.
+   *
+   * This can be helpful for avoiding layout shift in `<img>` usage.
    */
   inferDimensions?: boolean
 }
@@ -197,13 +245,23 @@ type WidthProps = PresetBase & { format: AllowedFormat } & (
   | ModifiedWidth
 )
 type OriginalWidth = {
-  /** maintain original image size */
+  /** Keep a single output at the image's original width. */
   widths: 'original'
 }
 type ModifiedWidth = {
-  /** A list of image widths to generate */
+  /**
+   * Width descriptors to generate for `srcset`.
+   *
+   * @example
+   * widths: [320, 640, 960]
+   */
   widths: number[]
-  /** Modify the width by some scalar amount */
+  /**
+   * Scalar multiplier applied to each configured width.
+   *
+   * @example
+   * widths: [400, 800], density: 2 // outputs 800w and 1600w
+   */
   density?: number
 }
 type WidthArgs = PresetBase & {
@@ -240,6 +298,9 @@ export type ImageGenerator = (
   img: Image,
   args: PresetArgs
 ) => Image | Promise<Image>
+/**
+ * Internal normalized preset configuration consumed by the plugin.
+ */
 export type PresetConfig = {
   inferDimensions: boolean
   /** only defined if using density preset */
@@ -261,6 +322,10 @@ type PresetSpec = {
   /** A function to generate the image */
   generate: ImageGenerator
 }
+/**
+ * Union of arguments passed to `withImage` callback functions.
+ * Use `args.preset` to discriminate between width and density variants.
+ */
 export type PresetArgs = DensityArgs | WidthArgs
 
 /**
