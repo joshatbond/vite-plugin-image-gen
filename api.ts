@@ -26,9 +26,7 @@ export function apiFactory(config: Config, pluginId: string): API {
 
   return {
     getImage: async (id) => {
-      if (!id) throw new Error('No id provided')
-      if (!(id in requestedImagesById))
-        throw new Error(`${id} not found in cache`)
+      if (!id || !(id in requestedImagesById)) return undefined
 
       return await requestedImagesById[id]!
     },
@@ -225,7 +223,7 @@ function getAssetHash(content: string | Buffer) {
 
 export type API = {
   /** Retrieve a single */
-  getImage: (id?: string) => Promise<sharp.Sharp>
+  getImage: (id?: string) => Promise<sharp.Sharp | undefined>
   /** Retrieve all images */
   getImages: () => Promise<OutputAsset[]>
   /** Remove unused files (i.e: not imported) from the cache */

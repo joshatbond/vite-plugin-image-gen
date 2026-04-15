@@ -316,9 +316,7 @@ function apiFactory(config, pluginId) {
   const imageHashesByFile = {};
   return {
     getImage: (id) => __async(null, null, function* () {
-      if (!id) throw new Error("No id provided");
-      if (!(id in requestedImagesById))
-        throw new Error(`${id} not found in cache`);
+      if (!id || !(id in requestedImagesById)) return void 0;
       return yield requestedImagesById[id];
     }),
     getImages: () => __async(null, null, function* () {
