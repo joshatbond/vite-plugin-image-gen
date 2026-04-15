@@ -3,6 +3,24 @@
   "type": "module",
   "version": "0.0.1",
   "description": "A Vite plugin that will generated images using a configured preset",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./presets": {
+      "types": "./dist/presets.d.ts",
+      "import": "./dist/presets.js",
+      "require": "./dist/presets.cjs"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/joshatbond/vite-plugin-image-gen"
@@ -10,7 +28,8 @@
   "bugs": "https://github.com/joshatbond/vite-plugin-image-gen/issues",
   "sideEffects": false,
   "scripts": {
-    "build": "tsup index.ts --format cjs,esm --dts"
+    "build": "tsup index.ts presets.ts --format cjs,esm --dts --clean",
+    "prepare": "pnpm run build"
   },
   "devDependencies": {
     "@nuxt/devalue": "^2.0.2",
@@ -18,6 +37,7 @@
     "@types/node": "^20.9.2",
     "debug": "^4.3.4",
     "rollup": "^4.5.0",
+    "tsup": "^8.5.1",
     "typescript": "^5.2.2",
     "vite": "^5.0.0"
   },
