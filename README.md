@@ -55,6 +55,39 @@ console.log(hero)
 // }
 ```
 
+### TypeScript Module Declaration (Required)
+
+If you are using TypeScript, declare each configured preset name explicitly.
+TypeScript does not reliably resolve a generic `*?preset=*` declaration for these
+imports in many setups.
+
+Create or update `vite-env.d.ts` (or another global `.d.ts` file):
+
+```ts
+/// <reference types="vite/client" />
+
+declare module '*?preset=responsive' {
+  import type { PresetAttr } from 'vite-plugin-image-gen'
+  const value: PresetAttr
+  export default value
+}
+
+declare module '*?preset=retina' {
+  import type { PresetAttr } from 'vite-plugin-image-gen'
+  const value: PresetAttr
+  export default value
+}
+
+declare module '*?preset=background' {
+  import type { PresetAttr } from 'vite-plugin-image-gen'
+  const value: PresetAttr
+  export default value
+}
+```
+
+Add one `declare module '*?preset=<name>'` block per preset you configure in your
+Vite plugin options.
+
 ## Common Scenarios
 
 ### 1) Responsive `<img>` with width descriptors
