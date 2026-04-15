@@ -101,8 +101,9 @@ export function apiFactory(config: Config, pluginId: string): API {
       const cachedFiles = await readdir(config.cacheDir)
       const unusedFiles = cachedFiles.filter((f) => !usedFiles.has(f))
 
-      for (const file of unusedFiles)
-        rm(resolve(config.cacheDir, file), { force: true })
+      await Promise.all(
+        unusedFiles.map((file) => rm(resolve(config.cacheDir, file), { force: true }))
+      )
     },
   }
 
@@ -227,7 +228,7 @@ export type API = {
   /** Retrieve all images */
   getImages: () => Promise<OutputAsset[]>
   /** Remove unused files (i.e: not imported) from the cache */
-  purgeCache: (images: OutputAsset[]) => void
+  purgeCache: (images: OutputAsset[]) => Promise<void>
   /** Generate all permutations of an image based on a given preset */
   generateImage: (id: ParsedId) => Promise<PresetAttr>
 }

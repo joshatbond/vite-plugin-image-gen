@@ -320,8 +320,9 @@ function apiFactory(config, pluginId) {
       const usedFiles = new Set(assets.map((a) => a.name));
       const cachedFiles = yield readdir(config.cacheDir);
       const unusedFiles = cachedFiles.filter((f) => !usedFiles.has(f));
-      for (const file of unusedFiles)
-        rm(resolve(config.cacheDir, file), { force: true });
+      yield Promise.all(
+        unusedFiles.map((file) => rm(resolve(config.cacheDir, file), { force: true }))
+      );
     })
   };
   function getImageHash(filename) {
@@ -479,7 +480,7 @@ function ImagePlugin({ presets, options }) {
       if (!config.writeToBundle) return;
       const images = yield api.getImages();
       for (const image of images) output[image.fileName] = image;
-      api.purgeCache(images);
+      yield api.purgeCache(images);
     }),
     /**
      * Rollup Build Hook called on each incoming module request
