@@ -20,11 +20,9 @@ type DensityProps = DensityBase & {
     format: AllowedFormat;
 };
 type DensityArgs = DensityBase & {
+    preset: 'density';
     density: number;
-    format: {
-        type: AllowedFormatKeys;
-        options: ImageFormatValues;
-    };
+    format: FormatArg;
 };
 type PresetBase = {
     /** Specify specific sharp resize options to use */
@@ -51,11 +49,10 @@ type ModifiedWidth = {
     density?: number;
 };
 type WidthArgs = PresetBase & {
+    preset: 'width';
+    width: number | 'original';
     density?: number;
-    format: {
-        type: AllowedFormatKeys;
-        options: ImageFormatValues;
-    };
+    format: FormatArg;
 };
 type Image = sharp.Sharp;
 type ImageFormatOptions = {
@@ -72,8 +69,16 @@ type ImageFormatOptions = {
 type ImageFormat = ExactlyOne<ImageFormatOptions>;
 type ImageFormatKeys = keyof ImageFormat;
 type ImageFormatValues = ValueOf<ImageFormat>;
+type OriginalFormatArg = {
+    type: 'original';
+    options?: undefined;
+};
+type TransformedFormatArg = {
+    type: ImageFormatKeys;
+    options?: ImageFormatValues;
+};
+type FormatArg = OriginalFormatArg | TransformedFormatArg;
 type AllowedFormat = ImageFormat | 'original';
-type AllowedFormatKeys = keyof ImageFormat | 'original';
 type ImageGenerator = (img: Image, args: PresetArgs) => Image | Promise<Image>;
 type PresetConfig = {
     inferDimensions: boolean;

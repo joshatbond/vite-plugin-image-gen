@@ -46,9 +46,13 @@ export function densityPreset(props: DensityProps): PresetConfig {
               ...props,
               preset: 'density',
               density: density / highestDensity,
-              format: { type: formatKey, options: formatValue },
+              format: toFormatArg(formatKey, formatValue),
             },
-            generate: async (img, { density, format: { type, options } }) => {
+            generate: async (img, args) => {
+              const {
+                density,
+                format: { type, options },
+              } = args as DensityArgs
               if (type != 'original') {
                 img = img.toFormat(type, options)
               }
@@ -68,8 +72,9 @@ export function densityPreset(props: DensityProps): PresetConfig {
 
               return (
                 (await withImage?.(img, {
+                  preset: 'density',
                   density,
-                  format: { type, options },
+                  format: toFormatArg(type, options),
                 })) ?? img
               )
             },
@@ -86,7 +91,8 @@ export function widthPreset(props: WidthProps): PresetConfig {
     format == 'original'
       ? undefined
       : (format[formatKey as ImageFormatKeys] as ImageFormatValues)
-  const widths = props.widths == 'original' ? ['original'] : props.widths
+  const widths: Array<number | 'original'> =
+    props.widths === 'original' ? ['original'] : props.widths
   const density = props.widths === 'original' ? undefined : props.density ?? 1
 
   return {
@@ -103,7 +109,7 @@ export function widthPreset(props: WidthProps): PresetConfig {
             condition: width === 'original' ? '' : `${width}w`,
             args: {
               preset: 'width',
-              format: { type: formatKey, options: formatValue },
+              format: toFormatArg(formatKey, formatValue),
               width,
               density,
               resizeOptions,
@@ -134,6 +140,13 @@ function mimeTypeFor(format: AllowedFormatKeys) {
     : format == 'jpg'
     ? 'jpeg'
     : `image/${format}`
+}
+function toFormatArg(
+  type: AllowedFormatKeys,
+  options: ImageFormatValues | undefined
+): FormatArg {
+  if (type === 'original') return { type }
+  return { type, options }
 }
 function cleanObject<T extends Record<string, unknown>>(obj: T): T {
   for (const [key, value] of Object.entries(obj)) {
@@ -168,8 +181,9 @@ type DensityProps = DensityBase & {
   format: AllowedFormat
 }
 type DensityArgs = DensityBase & {
+  preset: 'density'
   density: number
-  format: { type: AllowedFormatKeys; options: ImageFormatValues }
+  format: FormatArg
 }
 type PresetBase = {
   /** Specify specific sharp resize options to use */
@@ -197,8 +211,10 @@ type ModifiedWidth = {
   density?: number
 }
 type WidthArgs = PresetBase & {
+  preset: 'width'
+  width: number | 'original'
   density?: number
-  format: { type: AllowedFormatKeys; options: ImageFormatValues }
+  format: FormatArg
 }
 
 export type Image = sharp.Sharp
@@ -216,6 +232,12 @@ type ImageFormatOptions = {
 type ImageFormat = ExactlyOne<ImageFormatOptions>
 export type ImageFormatKeys = keyof ImageFormat
 type ImageFormatValues = ValueOf<ImageFormat>
+type OriginalFormatArg = { type: 'original'; options?: undefined }
+type TransformedFormatArg = {
+  type: ImageFormatKeys
+  options?: ImageFormatValues
+}
+type FormatArg = OriginalFormatArg | TransformedFormatArg
 type AllowedFormat = ImageFormat | 'original'
 type AllowedFormatKeys = keyof ImageFormat | 'original'
 export type ImageGenerator = (

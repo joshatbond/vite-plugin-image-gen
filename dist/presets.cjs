@@ -86,10 +86,14 @@ function densityPreset(props) {
           args: __spreadProps(__spreadValues({}, props), {
             preset: "density",
             density: density2 / highestDensity,
-            format: { type: formatKey, options: formatValue }
+            format: toFormatArg(formatKey, formatValue)
           }),
-          generate: (_0, _1) => __async(null, [_0, _1], function* (img, { density: density3, format: { type, options } }) {
+          generate: (img, args) => __async(null, null, function* () {
             var _a;
+            const {
+              density: density3,
+              format: { type, options }
+            } = args;
             if (type != "original") {
               img = img.toFormat(type, options);
             }
@@ -106,8 +110,9 @@ function densityPreset(props) {
               }
             }
             return (_a = yield withImage == null ? void 0 : withImage(img, {
+              preset: "density",
               density: density3,
-              format: { type, options }
+              format: toFormatArg(type, options)
             })) != null ? _a : img;
           })
         })
@@ -120,7 +125,7 @@ function widthPreset(props) {
   const { format, inferDimensions = false, resizeOptions, withImage } = props;
   const formatKey = format == "original" ? format : Object.keys(format)[0];
   const formatValue = format == "original" ? void 0 : format[formatKey];
-  const widths = props.widths == "original" ? ["original"] : props.widths;
+  const widths = props.widths === "original" ? ["original"] : props.widths;
   const density = props.widths === "original" ? void 0 : (_a = props.density) != null ? _a : 1;
   return {
     inferDimensions,
@@ -134,7 +139,7 @@ function widthPreset(props) {
           condition: width === "original" ? "" : `${width}w`,
           args: {
             preset: "width",
-            format: { type: formatKey, options: formatValue },
+            format: toFormatArg(formatKey, formatValue),
             width,
             density,
             resizeOptions
@@ -159,6 +164,10 @@ function widthPreset(props) {
 }
 function mimeTypeFor(format) {
   return format == "original" ? void 0 : format == "jpg" ? "jpeg" : `image/${format}`;
+}
+function toFormatArg(type, options) {
+  if (type === "original") return { type };
+  return { type, options };
 }
 function cleanObject(obj) {
   for (const [key, value] of Object.entries(obj)) {
