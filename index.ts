@@ -19,6 +19,7 @@ const VIRTUAL_ID = '/@imagepresets'
 export default function ImagePlugin({ presets, options }: Props): Plugin {
   let api: API
   let config: Config
+  let devVirtualId = VIRTUAL_ID
 
   return {
     /** required: Names the plugin */
@@ -45,7 +46,8 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
         // from plugin instantiation, overrides the above
         ...options,
       }
-      api = apiFactory(config, VIRTUAL_ID)
+      devVirtualId = withBase(config.base, VIRTUAL_ID)
+      api = apiFactory(config, devVirtualId)
       if (config.isBuild) await mkdir(config.cacheDir, { recursive: true })
     },
     /**
@@ -54,8 +56,15 @@ export default function ImagePlugin({ presets, options }: Props): Plugin {
      */
     configureServer: (server) => {
       server.middlewares.use(async (req, res, next) => {
-        if (req.url?.startsWith(VIRTUAL_ID)) {
-          const id = req.url.split(VIRTUAL_ID)[1]
+        const requestUrl = req.url
+        const virtualIdPrefix = requestUrl?.startsWith(devVirtualId)
+          ? devVirtualId
+          : requestUrl?.startsWith(VIRTUAL_ID)
+          ? VIRTUAL_ID
+          : undefined
+
+        if (virtualIdPrefix && requestUrl) {
+          const id = requestUrl.slice(virtualIdPrefix.length)
           const image = await api.getImage(id)
 
           if (!image) {
@@ -111,6 +120,15 @@ function parseId(id: string): ParsedId {
     path: id.slice(0, index),
     query: Object.fromEntries(new URLSearchParams(id.slice(index))),
   }
+}
+
+function withBase(base: string, path: string): string {
+  if (base === '/') return path
+
+  const normalizedBase = base.endsWith('/') ? base.slice(0, -1) : base
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
+  return normalizedBase + normalizedPath
 }
 
 export type Config = Options & {

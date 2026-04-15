@@ -484,6 +484,7 @@ var VIRTUAL_ID = "/@imagepresets";
 function ImagePlugin({ presets, options }) {
   let api;
   let config;
+  let devVirtualId = VIRTUAL_ID;
   return {
     /** required: Names the plugin */
     name: "image-gen",
@@ -506,7 +507,8 @@ function ImagePlugin({ presets, options }) {
         urlParam: "preset",
         writeToBundle: true
       }, options);
-      api = apiFactory(config, VIRTUAL_ID);
+      devVirtualId = withBase(config.base, VIRTUAL_ID);
+      api = apiFactory(config, devVirtualId);
       if (config.isBuild) yield (0, import_promises2.mkdir)(config.cacheDir, { recursive: true });
     }),
     /**
@@ -515,9 +517,10 @@ function ImagePlugin({ presets, options }) {
      */
     configureServer: (server) => {
       server.middlewares.use((req, res, next) => __async(null, null, function* () {
-        var _a;
-        if ((_a = req.url) == null ? void 0 : _a.startsWith(VIRTUAL_ID)) {
-          const id = req.url.split(VIRTUAL_ID)[1];
+        const requestUrl = req.url;
+        const virtualIdPrefix = (requestUrl == null ? void 0 : requestUrl.startsWith(devVirtualId)) ? devVirtualId : (requestUrl == null ? void 0 : requestUrl.startsWith(VIRTUAL_ID)) ? VIRTUAL_ID : void 0;
+        if (virtualIdPrefix && requestUrl) {
+          const id = requestUrl.slice(virtualIdPrefix.length);
           const image = yield api.getImage(id);
           if (!image) {
             res.statusCode = 404;
@@ -562,4 +565,10 @@ function parseId(id) {
     path: id.slice(0, index),
     query: Object.fromEntries(new URLSearchParams(id.slice(index)))
   };
+}
+function withBase(base, path) {
+  if (base === "/") return path;
+  const normalizedBase = base.endsWith("/") ? base.slice(0, -1) : base;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return normalizedBase + normalizedPath;
 }
