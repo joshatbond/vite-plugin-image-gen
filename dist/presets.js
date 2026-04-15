@@ -1,9 +1,3 @@
-import {
-  __async,
-  __spreadProps,
-  __spreadValues
-} from "./chunk-6FNC3XMI.js";
-
 // presets.ts
 function densityPreset(props) {
   const {
@@ -27,13 +21,13 @@ function densityPreset(props) {
       specs: density.sort((a, b) => a - b).map(
         (density2) => cleanObject({
           condition: `${density2}x`,
-          args: __spreadProps(__spreadValues({}, props), {
+          args: {
+            ...props,
             preset: "density",
             density: density2 / highestDensity,
             format: toFormatArg(formatKey, formatValue)
-          }),
-          generate: (img, args) => __async(null, null, function* () {
-            var _a;
+          },
+          generate: async (img, args) => {
             const {
               density: density3,
               format: { type, options }
@@ -43,34 +37,34 @@ function densityPreset(props) {
             }
             if (density3) {
               if (baseHeight || baseWidth) {
-                img = img.resize(__spreadValues({
+                img = img.resize({
                   width: x(density3, baseWidth),
                   height: x(density3, baseHeight),
-                  withoutEnlargement: true
-                }, resizeOptions));
+                  withoutEnlargement: true,
+                  ...resizeOptions
+                });
               } else {
-                const { width } = yield img.metadata();
+                const { width } = await img.metadata();
                 img = img.resize({ width: x(density3, width) });
               }
             }
-            return (_a = yield withImage == null ? void 0 : withImage(img, {
+            return await withImage?.(img, {
               preset: "density",
               density: density3,
               format: toFormatArg(type, options)
-            })) != null ? _a : img;
-          })
+            }) ?? img;
+          }
         })
       )
     }
   };
 }
 function widthPreset(props) {
-  var _a;
   const { format, inferDimensions = false, resizeOptions, withImage } = props;
   const formatKey = format == "original" ? format : Object.keys(format)[0];
   const formatValue = format == "original" ? void 0 : format[formatKey];
   const widths = props.widths === "original" ? ["original"] : props.widths;
-  const density = props.widths === "original" ? void 0 : (_a = props.density) != null ? _a : 1;
+  const density = props.widths === "original" ? void 0 : props.density ?? 1;
   return {
     inferDimensions,
     image: {
@@ -88,19 +82,19 @@ function widthPreset(props) {
             density,
             resizeOptions
           },
-          generate: (img, args) => __async(null, null, function* () {
-            var _a2;
+          generate: async (img, args) => {
             if (formatKey !== "original") {
               img = img.toFormat(formatKey, formatValue);
             }
             if (width !== "original" && typeof width == "number") {
-              img = img.resize(__spreadValues({
+              img = img.resize({
                 width: x(width, density),
-                withoutEnlargement: true
-              }, resizeOptions));
+                withoutEnlargement: true,
+                ...resizeOptions
+              });
             }
-            return (_a2 = yield withImage == null ? void 0 : withImage(img, args)) != null ? _a2 : img;
-          })
+            return await withImage?.(img, args) ?? img;
+          }
         })
       )
     }

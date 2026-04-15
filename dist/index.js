@@ -1,8 +1,3 @@
-import {
-  __async,
-  __spreadValues
-} from "./chunk-6FNC3XMI.js";
-
 // index.ts
 import { join as join2 } from "path";
 import { mkdir } from "fs/promises";
@@ -252,14 +247,12 @@ function apiFactory(config, pluginId) {
   const imageFilenamesById = {};
   const imageHashesByFile = {};
   return {
-    getImage: (id) => __async(null, null, function* () {
+    getImage: async (id) => {
       if (!id || !(id in requestedImagesById)) return void 0;
-      return yield requestedImagesById[id];
-    }),
-    getImages: () => __async(null, null, function* () {
-      return yield Promise.all(generatedImages);
-    }),
-    generateImage: (_0) => __async(null, [_0], function* ({ path: filename, query }) {
+      return await requestedImagesById[id];
+    },
+    getImages: async () => await Promise.all(generatedImages),
+    generateImage: async ({ path: filename, query }) => {
       const { [config.urlParam]: presetName } = query;
       if (!presetName)
         throw new Error("vite-plugin-image-gen: No preset was defined");
@@ -268,13 +261,11 @@ function apiFactory(config, pluginId) {
         throw new Error(
           `vite-plugin-image-gen: Unknown image preset '${presetName}'`
         );
-      const sourceSet = yield Promise.all(
-        preset.image.specs.map((_02) => __async(null, [_02], function* ({ condition, args, generate }) {
-          return [
-            encodeURI(yield getImageSrc(filename, args, generate)),
-            condition
-          ];
-        }))
+      const sourceSet = await Promise.all(
+        preset.image.specs.map(async ({ condition, args, generate }) => [
+          encodeURI(await getImageSrc(filename, args, generate)),
+          condition
+        ])
       );
       const source = sourceSet[sourceSet.length - 1];
       if (!source || !source[0])
@@ -296,13 +287,13 @@ function apiFactory(config, pluginId) {
         if (preset.inferDimensions) {
           const lastSrc = preset.image.specs[preset.image.specs.length - 1];
           if (!lastSrc) throw new Error("No image source");
-          const image = yield lastSrc.generate(
+          const image = await lastSrc.generate(
             loadImage(resolve(config.root, filename)),
             lastSrc.args
           );
           const {
             info: { width, height }
-          } = yield image.toBuffer({ resolveWithObject: true });
+          } = await image.toBuffer({ resolveWithObject: true });
           imageWidth = width;
           imageHeight = height;
         }
@@ -314,85 +305,74 @@ function apiFactory(config, pluginId) {
           width: imageWidth
         };
       }
-    }),
-    purgeCache: (assets) => __async(null, null, function* () {
+    },
+    purgeCache: async (assets) => {
       if (!config.purgeCache) return;
       const usedFiles = new Set(assets.map((a) => a.name));
-      const cachedFiles = yield readdir(config.cacheDir);
+      const cachedFiles = await readdir(config.cacheDir);
       const unusedFiles = cachedFiles.filter((f) => !usedFiles.has(f));
-      yield Promise.all(
+      await Promise.all(
         unusedFiles.map((file) => rm(resolve(config.cacheDir, file), { force: true }))
       );
-    })
+    }
   };
-  function getImageHash(filename) {
-    return __async(this, null, function* () {
-      return yield imageHashesByFile[filename] || (imageHashesByFile[filename] = loadImage(filename).toBuffer().then(getAssetHash));
-    });
+  async function getImageHash(filename) {
+    return await (imageHashesByFile[filename] || (imageHashesByFile[filename] = loadImage(filename).toBuffer().then(getAssetHash)));
   }
-  function getImageSrc(filename, args, fn) {
-    return __async(this, null, function* () {
-      filename = resolve(config.root, filename);
-      const id = generateImageID(filename, args);
-      requestedImagesById[id] || (requestedImagesById[id] = fn(loadImage(filename), args));
-      if (config.isBuild) {
-        const image = yield requestedImagesById[id];
-        if (!image) throw new Error(`No image exists for ${id}!`);
-        imageFilenamesById[id] || (imageFilenamesById[id] = queueImageAndGetFilename(id, filename, image));
-        return config.base + (yield imageFilenamesById[id]);
-      }
-      return pluginId + id;
-    });
+  async function getImageSrc(filename, args, fn) {
+    filename = resolve(config.root, filename);
+    const id = generateImageID(filename, args);
+    requestedImagesById[id] || (requestedImagesById[id] = fn(loadImage(filename), args));
+    if (config.isBuild) {
+      const image = await requestedImagesById[id];
+      if (!image) throw new Error(`No image exists for ${id}!`);
+      imageFilenamesById[id] || (imageFilenamesById[id] = queueImageAndGetFilename(id, filename, image));
+      return config.base + await imageFilenamesById[id];
+    }
+    return pluginId + id;
   }
-  function queueImageAndGetFilename(id, sourceFilename, image) {
-    return __async(this, null, function* () {
-      const base = basename(sourceFilename, extname(sourceFilename));
-      const hash = getAssetHash(id + (yield getImageHash(sourceFilename)));
-      const format = yield formatFor(image);
-      const filename = `${base}.${hash}.${format}`;
-      generatedImages.push(writeImageFile(filename, image));
-      return posix.join(config.assetsDir, filename);
-    });
+  async function queueImageAndGetFilename(id, sourceFilename, image) {
+    const base = basename(sourceFilename, extname(sourceFilename));
+    const hash = getAssetHash(id + await getImageHash(sourceFilename));
+    const format = await formatFor(image);
+    const filename = `${base}.${hash}.${format}`;
+    generatedImages.push(writeImageFile(filename, image));
+    return posix.join(config.assetsDir, filename);
   }
-  function writeImageFile(filename, image) {
-    return __async(this, null, function* () {
-      const cachedFilename = join(config.cacheDir, filename);
-      if (!(yield exists(cachedFilename))) {
-        yield image.toFile(cachedFilename);
-      }
-      return {
-        fileName: posix.join(config.assetsDir, filename),
-        name: filename,
-        needsCodeReference: true,
-        source: yield readFile(cachedFilename),
-        type: "asset"
-      };
-    });
+  async function writeImageFile(filename, image) {
+    const cachedFilename = join(config.cacheDir, filename);
+    if (!await exists(cachedFilename)) {
+      await image.toFile(cachedFilename);
+    }
+    return {
+      fileName: posix.join(config.assetsDir, filename),
+      name: filename,
+      needsCodeReference: true,
+      source: await readFile(cachedFilename),
+      type: "asset"
+    };
   }
 }
-function formatFor(image) {
-  return __async(this, null, function* () {
-    var _a;
-    const allowedFormats = [
-      "avif",
-      "gif",
-      "heif",
-      "jpeg",
-      "jpg",
-      "png",
-      "tif",
-      "tiff",
-      "webp"
-    ];
-    let format = (_a = image.options) == null ? void 0 : _a.formatOut;
-    if (format == "input") format = (yield image.metadata()).format;
-    if (!format || !allowedFormats.includes(format)) {
-      console.error(`Could not infer image format for ${image}`);
-      throw new Error("Could not infer image format");
-    }
-    if (format == "heif") return "avif";
-    return format;
-  });
+async function formatFor(image) {
+  const allowedFormats = [
+    "avif",
+    "gif",
+    "heif",
+    "jpeg",
+    "jpg",
+    "png",
+    "tif",
+    "tiff",
+    "webp"
+  ];
+  let format = image.options?.formatOut;
+  if (format == "input") format = (await image.metadata()).format;
+  if (!format || !allowedFormats.includes(format)) {
+    console.error(`Could not infer image format for ${image}`);
+    throw new Error("Could not infer image format");
+  }
+  if (format == "heif") return "avif";
+  return format;
 }
 function loadImage(url) {
   return sharp(decodeURIComponent(parseURL(url).pathname));
@@ -400,13 +380,11 @@ function loadImage(url) {
 function parseURL(rawURL) {
   return new URL(rawURL.replace(/#/g, "%23"), "file://");
 }
-function exists(path) {
-  return __async(this, null, function* () {
-    return yield access(path, constants.F_OK).then(
-      () => true,
-      () => false
-    );
-  });
+async function exists(path) {
+  return await access(path, constants.F_OK).then(
+    () => true,
+    () => false
+  );
 }
 function generateImageID(url, args) {
   const extension = args.format.type !== "original" ? `.${args.format.type}` : "";
@@ -432,8 +410,8 @@ function ImagePlugin({ presets, options }) {
      * Vite Hook called after the vite config is resolved.
      * https://vitejs.dev/guide/api-plugin#configresolved
      */
-    configResolved: (_0) => __async(null, [_0], function* ({ build: { assetsDir }, base, command, root }) {
-      config = __spreadValues({
+    configResolved: async ({ build: { assetsDir }, base, command, root }) => {
+      config = {
         assetsDir,
         base,
         cacheDir: join2(root, "node_modules", ".images"),
@@ -443,57 +421,59 @@ function ImagePlugin({ presets, options }) {
         purgeCache: true,
         root,
         urlParam: "preset",
-        writeToBundle: true
-      }, options);
+        writeToBundle: true,
+        // from plugin instantiation, overrides the above
+        ...options
+      };
       devVirtualId = withBase(config.base, VIRTUAL_ID);
       api = apiFactory(config, devVirtualId);
-      if (config.isBuild) yield mkdir(config.cacheDir, { recursive: true });
-    }),
+      if (config.isBuild) await mkdir(config.cacheDir, { recursive: true });
+    },
     /**
      * Vite Hook for configuring the dev server.
      * https://vitejs.dev/guide/api-plugin#configureserver
      */
     configureServer: (server) => {
-      server.middlewares.use((req, res, next) => __async(null, null, function* () {
+      server.middlewares.use(async (req, res, next) => {
         const requestUrl = req.url;
-        const virtualIdPrefix = (requestUrl == null ? void 0 : requestUrl.startsWith(devVirtualId)) ? devVirtualId : (requestUrl == null ? void 0 : requestUrl.startsWith(VIRTUAL_ID)) ? VIRTUAL_ID : void 0;
+        const virtualIdPrefix = requestUrl?.startsWith(devVirtualId) ? devVirtualId : requestUrl?.startsWith(VIRTUAL_ID) ? VIRTUAL_ID : void 0;
         if (virtualIdPrefix && requestUrl) {
           const id = requestUrl.slice(virtualIdPrefix.length);
-          const image = yield api.getImage(id);
+          const image = await api.getImage(id);
           if (!image) {
             res.statusCode = 404;
             return res.end();
           }
-          res.setHeader("Content-Type", `image/${yield formatFor(image)}`);
+          res.setHeader("Content-Type", `image/${await formatFor(image)}`);
           res.setHeader("Cache-Control", "max-age=360000");
           return image.clone().on("error", (e) => console.error(e)).pipe(res);
         }
         next();
-      }));
+      });
     },
     /**
      * Rollup Build Hook called before the files are written in build
      * Gathers generated images and adds them to the output files to write.
      * https://rollupjs.org/plugin-development/#generatebundle
      */
-    generateBundle: (_, output) => __async(null, null, function* () {
+    generateBundle: async (_, output) => {
       if (!config.writeToBundle) return;
-      const images = yield api.getImages();
+      const images = await api.getImages();
       for (const image of images) output[image.fileName] = image;
-      yield api.purgeCache(images);
-    }),
+      await api.purgeCache(images);
+    },
     /**
      * Rollup Build Hook called on each incoming module request
      * This is a loader that checks the module request for the
      * presence of a preset, and returns the resolved image
      * https://rollupjs.org/plugin-development/#load
      */
-    load: (id) => __async(null, null, function* () {
+    load: async (id) => {
       const parsedId = parseId(id);
       if (!(config.urlParam in parsedId.query)) return;
-      const image = yield api.generateImage(parsedId);
+      const image = await api.generateImage(parsedId);
       return `export default ${devalue(image)}`;
-    })
+    }
   };
 }
 function parseId(id) {

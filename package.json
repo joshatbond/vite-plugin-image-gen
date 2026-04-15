@@ -13,12 +13,14 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
     },
     "./presets": {
       "types": "./dist/presets.d.ts",
       "import": "./dist/presets.js",
-      "require": "./dist/presets.cjs"
+      "require": "./dist/presets.cjs",
+      "default": "./dist/presets.js"
     }
   },
   "repository": {
@@ -43,5 +45,11 @@
   },
   "dependencies": {
     "sharp": "^0.32.6"
+  },
+  "peerDependencies": {
+    "vite": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

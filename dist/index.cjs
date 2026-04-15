@@ -3,22 +3,8 @@ var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
@@ -40,26 +26,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-var __async = (__this, __arguments, generator) => {
-  return new Promise((resolve2, reject) => {
-    var fulfilled = (value) => {
-      try {
-        step(generator.next(value));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    var rejected = (value) => {
-      try {
-        step(generator.throw(value));
-      } catch (e) {
-        reject(e);
-      }
-    };
-    var step = (x) => x.done ? resolve2(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
-    step((generator = generator.apply(__this, __arguments)).next());
-  });
-};
 
 // index.ts
 var index_exports = {};
@@ -315,14 +281,12 @@ function apiFactory(config, pluginId) {
   const imageFilenamesById = {};
   const imageHashesByFile = {};
   return {
-    getImage: (id) => __async(null, null, function* () {
+    getImage: async (id) => {
       if (!id || !(id in requestedImagesById)) return void 0;
-      return yield requestedImagesById[id];
-    }),
-    getImages: () => __async(null, null, function* () {
-      return yield Promise.all(generatedImages);
-    }),
-    generateImage: (_0) => __async(null, [_0], function* ({ path: filename, query }) {
+      return await requestedImagesById[id];
+    },
+    getImages: async () => await Promise.all(generatedImages),
+    generateImage: async ({ path: filename, query }) => {
       const { [config.urlParam]: presetName } = query;
       if (!presetName)
         throw new Error("vite-plugin-image-gen: No preset was defined");
@@ -331,13 +295,11 @@ function apiFactory(config, pluginId) {
         throw new Error(
           `vite-plugin-image-gen: Unknown image preset '${presetName}'`
         );
-      const sourceSet = yield Promise.all(
-        preset.image.specs.map((_02) => __async(null, [_02], function* ({ condition, args, generate }) {
-          return [
-            encodeURI(yield getImageSrc(filename, args, generate)),
-            condition
-          ];
-        }))
+      const sourceSet = await Promise.all(
+        preset.image.specs.map(async ({ condition, args, generate }) => [
+          encodeURI(await getImageSrc(filename, args, generate)),
+          condition
+        ])
       );
       const source = sourceSet[sourceSet.length - 1];
       if (!source || !source[0])
@@ -359,13 +321,13 @@ function apiFactory(config, pluginId) {
         if (preset.inferDimensions) {
           const lastSrc = preset.image.specs[preset.image.specs.length - 1];
           if (!lastSrc) throw new Error("No image source");
-          const image = yield lastSrc.generate(
+          const image = await lastSrc.generate(
             loadImage((0, import_node_path.resolve)(config.root, filename)),
             lastSrc.args
           );
           const {
             info: { width, height }
-          } = yield image.toBuffer({ resolveWithObject: true });
+          } = await image.toBuffer({ resolveWithObject: true });
           imageWidth = width;
           imageHeight = height;
         }
@@ -377,85 +339,74 @@ function apiFactory(config, pluginId) {
           width: imageWidth
         };
       }
-    }),
-    purgeCache: (assets) => __async(null, null, function* () {
+    },
+    purgeCache: async (assets) => {
       if (!config.purgeCache) return;
       const usedFiles = new Set(assets.map((a) => a.name));
-      const cachedFiles = yield (0, import_promises.readdir)(config.cacheDir);
+      const cachedFiles = await (0, import_promises.readdir)(config.cacheDir);
       const unusedFiles = cachedFiles.filter((f) => !usedFiles.has(f));
-      yield Promise.all(
+      await Promise.all(
         unusedFiles.map((file) => (0, import_promises.rm)((0, import_node_path.resolve)(config.cacheDir, file), { force: true }))
       );
-    })
+    }
   };
-  function getImageHash(filename) {
-    return __async(this, null, function* () {
-      return yield imageHashesByFile[filename] || (imageHashesByFile[filename] = loadImage(filename).toBuffer().then(getAssetHash));
-    });
+  async function getImageHash(filename) {
+    return await (imageHashesByFile[filename] || (imageHashesByFile[filename] = loadImage(filename).toBuffer().then(getAssetHash)));
   }
-  function getImageSrc(filename, args, fn) {
-    return __async(this, null, function* () {
-      filename = (0, import_node_path.resolve)(config.root, filename);
-      const id = generateImageID(filename, args);
-      requestedImagesById[id] || (requestedImagesById[id] = fn(loadImage(filename), args));
-      if (config.isBuild) {
-        const image = yield requestedImagesById[id];
-        if (!image) throw new Error(`No image exists for ${id}!`);
-        imageFilenamesById[id] || (imageFilenamesById[id] = queueImageAndGetFilename(id, filename, image));
-        return config.base + (yield imageFilenamesById[id]);
-      }
-      return pluginId + id;
-    });
+  async function getImageSrc(filename, args, fn) {
+    filename = (0, import_node_path.resolve)(config.root, filename);
+    const id = generateImageID(filename, args);
+    requestedImagesById[id] || (requestedImagesById[id] = fn(loadImage(filename), args));
+    if (config.isBuild) {
+      const image = await requestedImagesById[id];
+      if (!image) throw new Error(`No image exists for ${id}!`);
+      imageFilenamesById[id] || (imageFilenamesById[id] = queueImageAndGetFilename(id, filename, image));
+      return config.base + await imageFilenamesById[id];
+    }
+    return pluginId + id;
   }
-  function queueImageAndGetFilename(id, sourceFilename, image) {
-    return __async(this, null, function* () {
-      const base = (0, import_node_path.basename)(sourceFilename, (0, import_node_path.extname)(sourceFilename));
-      const hash = getAssetHash(id + (yield getImageHash(sourceFilename)));
-      const format = yield formatFor(image);
-      const filename = `${base}.${hash}.${format}`;
-      generatedImages.push(writeImageFile(filename, image));
-      return import_node_path.posix.join(config.assetsDir, filename);
-    });
+  async function queueImageAndGetFilename(id, sourceFilename, image) {
+    const base = (0, import_node_path.basename)(sourceFilename, (0, import_node_path.extname)(sourceFilename));
+    const hash = getAssetHash(id + await getImageHash(sourceFilename));
+    const format = await formatFor(image);
+    const filename = `${base}.${hash}.${format}`;
+    generatedImages.push(writeImageFile(filename, image));
+    return import_node_path.posix.join(config.assetsDir, filename);
   }
-  function writeImageFile(filename, image) {
-    return __async(this, null, function* () {
-      const cachedFilename = (0, import_node_path.join)(config.cacheDir, filename);
-      if (!(yield exists(cachedFilename))) {
-        yield image.toFile(cachedFilename);
-      }
-      return {
-        fileName: import_node_path.posix.join(config.assetsDir, filename),
-        name: filename,
-        needsCodeReference: true,
-        source: yield (0, import_promises.readFile)(cachedFilename),
-        type: "asset"
-      };
-    });
+  async function writeImageFile(filename, image) {
+    const cachedFilename = (0, import_node_path.join)(config.cacheDir, filename);
+    if (!await exists(cachedFilename)) {
+      await image.toFile(cachedFilename);
+    }
+    return {
+      fileName: import_node_path.posix.join(config.assetsDir, filename),
+      name: filename,
+      needsCodeReference: true,
+      source: await (0, import_promises.readFile)(cachedFilename),
+      type: "asset"
+    };
   }
 }
-function formatFor(image) {
-  return __async(this, null, function* () {
-    var _a;
-    const allowedFormats = [
-      "avif",
-      "gif",
-      "heif",
-      "jpeg",
-      "jpg",
-      "png",
-      "tif",
-      "tiff",
-      "webp"
-    ];
-    let format = (_a = image.options) == null ? void 0 : _a.formatOut;
-    if (format == "input") format = (yield image.metadata()).format;
-    if (!format || !allowedFormats.includes(format)) {
-      console.error(`Could not infer image format for ${image}`);
-      throw new Error("Could not infer image format");
-    }
-    if (format == "heif") return "avif";
-    return format;
-  });
+async function formatFor(image) {
+  const allowedFormats = [
+    "avif",
+    "gif",
+    "heif",
+    "jpeg",
+    "jpg",
+    "png",
+    "tif",
+    "tiff",
+    "webp"
+  ];
+  let format = image.options?.formatOut;
+  if (format == "input") format = (await image.metadata()).format;
+  if (!format || !allowedFormats.includes(format)) {
+    console.error(`Could not infer image format for ${image}`);
+    throw new Error("Could not infer image format");
+  }
+  if (format == "heif") return "avif";
+  return format;
 }
 function loadImage(url) {
   return (0, import_sharp.default)(decodeURIComponent(parseURL(url).pathname));
@@ -463,13 +414,11 @@ function loadImage(url) {
 function parseURL(rawURL) {
   return new URL(rawURL.replace(/#/g, "%23"), "file://");
 }
-function exists(path) {
-  return __async(this, null, function* () {
-    return yield (0, import_promises.access)(path, import_promises.constants.F_OK).then(
-      () => true,
-      () => false
-    );
-  });
+async function exists(path) {
+  return await (0, import_promises.access)(path, import_promises.constants.F_OK).then(
+    () => true,
+    () => false
+  );
 }
 function generateImageID(url, args) {
   const extension = args.format.type !== "original" ? `.${args.format.type}` : "";
@@ -495,8 +444,8 @@ function ImagePlugin({ presets, options }) {
      * Vite Hook called after the vite config is resolved.
      * https://vitejs.dev/guide/api-plugin#configresolved
      */
-    configResolved: (_0) => __async(null, [_0], function* ({ build: { assetsDir }, base, command, root }) {
-      config = __spreadValues({
+    configResolved: async ({ build: { assetsDir }, base, command, root }) => {
+      config = {
         assetsDir,
         base,
         cacheDir: (0, import_node_path2.join)(root, "node_modules", ".images"),
@@ -506,57 +455,59 @@ function ImagePlugin({ presets, options }) {
         purgeCache: true,
         root,
         urlParam: "preset",
-        writeToBundle: true
-      }, options);
+        writeToBundle: true,
+        // from plugin instantiation, overrides the above
+        ...options
+      };
       devVirtualId = withBase(config.base, VIRTUAL_ID);
       api = apiFactory(config, devVirtualId);
-      if (config.isBuild) yield (0, import_promises2.mkdir)(config.cacheDir, { recursive: true });
-    }),
+      if (config.isBuild) await (0, import_promises2.mkdir)(config.cacheDir, { recursive: true });
+    },
     /**
      * Vite Hook for configuring the dev server.
      * https://vitejs.dev/guide/api-plugin#configureserver
      */
     configureServer: (server) => {
-      server.middlewares.use((req, res, next) => __async(null, null, function* () {
+      server.middlewares.use(async (req, res, next) => {
         const requestUrl = req.url;
-        const virtualIdPrefix = (requestUrl == null ? void 0 : requestUrl.startsWith(devVirtualId)) ? devVirtualId : (requestUrl == null ? void 0 : requestUrl.startsWith(VIRTUAL_ID)) ? VIRTUAL_ID : void 0;
+        const virtualIdPrefix = requestUrl?.startsWith(devVirtualId) ? devVirtualId : requestUrl?.startsWith(VIRTUAL_ID) ? VIRTUAL_ID : void 0;
         if (virtualIdPrefix && requestUrl) {
           const id = requestUrl.slice(virtualIdPrefix.length);
-          const image = yield api.getImage(id);
+          const image = await api.getImage(id);
           if (!image) {
             res.statusCode = 404;
             return res.end();
           }
-          res.setHeader("Content-Type", `image/${yield formatFor(image)}`);
+          res.setHeader("Content-Type", `image/${await formatFor(image)}`);
           res.setHeader("Cache-Control", "max-age=360000");
           return image.clone().on("error", (e) => console.error(e)).pipe(res);
         }
         next();
-      }));
+      });
     },
     /**
      * Rollup Build Hook called before the files are written in build
      * Gathers generated images and adds them to the output files to write.
      * https://rollupjs.org/plugin-development/#generatebundle
      */
-    generateBundle: (_, output) => __async(null, null, function* () {
+    generateBundle: async (_, output) => {
       if (!config.writeToBundle) return;
-      const images = yield api.getImages();
+      const images = await api.getImages();
       for (const image of images) output[image.fileName] = image;
-      yield api.purgeCache(images);
-    }),
+      await api.purgeCache(images);
+    },
     /**
      * Rollup Build Hook called on each incoming module request
      * This is a loader that checks the module request for the
      * presence of a preset, and returns the resolved image
      * https://rollupjs.org/plugin-development/#load
      */
-    load: (id) => __async(null, null, function* () {
+    load: async (id) => {
       const parsedId = parseId(id);
       if (!(config.urlParam in parsedId.query)) return;
-      const image = yield api.generateImage(parsedId);
+      const image = await api.generateImage(parsedId);
       return `export default ${devalue(image)}`;
-    })
+    }
   };
 }
 function parseId(id) {
